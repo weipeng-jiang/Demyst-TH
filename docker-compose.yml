@@ -1,0 +1,18 @@
+version: "3"
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - backend
+
+  xero-mock:
+    image: jaypeng2015/show-me-the-money
+    ports:
+      - "3000:3000"
