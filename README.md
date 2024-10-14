@@ -1,6 +1,6 @@
 ### Build and run the Docker containers using Docker Compose:
 
-In the root, run:
+In root directory, run:
 
 `docker-compose up --build`
 
