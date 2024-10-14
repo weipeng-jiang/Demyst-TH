@@ -1,5 +1,5 @@
-import React, { Fragment } from "react";
-import { BalanceSheetData, Row } from "./types";
+import { Fragment } from "react";
+import { BalanceSheetData, Cell, Row } from "./types";
 
 type BalanceSheetProps = {
   data: BalanceSheetData;
@@ -7,55 +7,68 @@ type BalanceSheetProps = {
 
 export const BalanceSheet = ({ data }: BalanceSheetProps) => {
   const report = data.Reports[0];
+
   return (
     <div>
       <h2>Report Name: {report.ReportName}</h2>
       <h3>{report.ReportTitles.join(" - ")}</h3>
       <table>
-        <thead>
-          <tr>
-            {report.Rows[0].Cells.map((cell, index) => (
-              <th key={`${cell.Value}-${index}`}>{cell.Value}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {report.Rows.slice(1).map((row, index) => renderSection(row, index))}
-        </tbody>
+        <TableHeader headerCells={report.Rows[0].Cells} />
+        <TableBody rows={report.Rows.slice(1)} />
       </table>
     </div>
   );
 };
 
-const renderSection = (section: Row, index: number) => (
-  <Fragment key={`${section.Title}-${index}`}>
+const TableHeader = ({ headerCells }: { headerCells: Cell[] }) => (
+  <thead>
+    <tr>
+      {headerCells.map((cell, index) => (
+        <th key={`${cell.Value}-${index}`}>{cell.Value}</th>
+      ))}
+    </tr>
+  </thead>
+);
+
+const TableBody = ({ rows }: { rows: Row[] }) => (
+  <tbody>
+    {rows.map((row, index) => (
+      <TableSection section={row} key={`${row.Title || index}`} />
+    ))}
+  </tbody>
+);
+
+const TableSection = ({ section }: { section: Row }) => (
+  <Fragment>
     {section.Title && (
       <tr>
         <th style={{ textAlign: "left" }}>{section.Title}</th>
       </tr>
     )}
-    {section.Rows && section.Rows.map((row) => renderRow(row))}
+    {section.Rows?.map((subRow) => (
+      <TableRow row={subRow} key={subRow.Title || subRow.Cells[0].Value} />
+    ))}
   </Fragment>
 );
 
-const renderRow = (row: Row, depth = 0) => {
-  return (
-    <Fragment key={row.Title || row.Cells[0].Value}>
-      <tr>
-        {row.Cells.map((cell, index) => (
-          <td
-            key={`${cell.Value}-${index}`}
-            style={{
-              textAlign: "left",
-              fontWeight: row.RowType === "SummaryRow" ? "bold" : "normal",
-              paddingBottom: row.RowType === "SummaryRow" ? 30 : 0,
-            }}
-          >
-            {cell.Value}
-          </td>
-        ))}
-      </tr>
-      {row.Rows && row.Rows.map((subRow) => renderRow(subRow, depth + 1))}
-    </Fragment>
-  );
-};
+const TableRow = ({ row }: { row: Row }) => (
+  <Fragment>
+    <tr>
+      {row.Cells.map((cell, index) => (
+        <td
+          key={`${cell.Value}-${index}`}
+          style={{
+            textAlign: "left",
+            fontWeight: row.RowType === "SummaryRow" ? "bold" : "normal",
+            paddingBottom: row.RowType === "SummaryRow" ? 30 : 0,
+          }}
+        >
+          {cell.Value}
+        </td>
+      ))}
+    </tr>
+    {row.Rows?.map((subRow) => (
+      <TableRow row={subRow} key={subRow.Title || subRow.Cells[0].Value} />
+    ))}
+  </Fragment>
+);

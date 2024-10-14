@@ -1,31 +1,54 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { AxiosResponse } from 'axios';
-import { map, catchError, firstValueFrom } from 'rxjs';
-
-// In production app, these will come from an environment variable
-const BASE_URL = 'http://xero-mock:3000';
-const PATH = '/api.xro/2.0/Reports/BalanceSheet';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { AxiosError, AxiosResponse } from 'axios';
+import { map, firstValueFrom } from 'rxjs';
 
 // NOTE: The console.log, console.error simulates logging in Production app
-// NOTE The error handling is an example of a few typical errors. Could be different in a real app
 @Injectable()
 export class XeroService {
+  // In production app, these will come from an environment variable
+  private readonly baseUrl = 'http://xero-mock:3000';
+  private readonly balanceSheetPath = '/api.xro/2.0/Reports/BalanceSheet';
+
   constructor(private readonly httpService: HttpService) {}
   async getBalanceSheet() {
-    const uri = `${BASE_URL}${PATH}`;
+    const URI = `${this.baseUrl}${this.balanceSheetPath}`;
 
     console.log('Fetching balance sheet from Xero...');
+    try {
+      const response = await firstValueFrom(
+        this.httpService
+          .get(URI)
+          .pipe(map((response: AxiosResponse) => response.data)),
+      );
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch balance sheet from Xero:', error);
 
-    const response = this.httpService.get(uri).pipe(
-      map((response: AxiosResponse) => response.data),
-      catchError((error) => {
-        // In production app, can expect different errors
-        console.error('Failed to fetch data from Xero. Error:', error);
-        throw new UnauthorizedException('Failed to fetch data from Xero.');
-      }),
-    );
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 400) {
+          throw new BadRequestException(error.response.data);
+        }
 
-    return await firstValueFrom(response);
+        if (error.response?.status === 401) {
+          throw new UnauthorizedException(error.response.data);
+        }
+
+        if (error.response?.status === 404) {
+          throw new NotFoundException(error.response.data);
+        }
+      }
+
+      // Any exception not in the above, throw internal server error
+      throw new InternalServerErrorException(
+        'Something went wrong. Failed to fetch data from Xero.',
+      );
+    }
   }
 }

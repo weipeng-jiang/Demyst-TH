@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { BalanceSheet } from "./BalanceSheet"; // Adjust import based on your file structure
+import { BalanceSheet } from "./BalanceSheet";
 import { BalanceSheetData } from "./types";
 
 describe("BalanceSheet Component", () => {
